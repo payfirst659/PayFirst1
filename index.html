@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayFirst1 - Mobile Recharge</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#111}
+.page{max-width:420px;margin:28px auto;padding:0 14px 40px}
+.card{background:#fff;border-radius:30px;padding:38px 28px 42px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+h1{text-align:center;font-size:42px;margin:8px 0 55px;font-weight:800}
+.field{margin-bottom:32px}
+label{display:block;font-size:27px;font-weight:800;margin-bottom:12px}
+input,select{width:100%;height:94px;border:2px solid #d2d2d2;border-radius:20px;background:#fff;padding:0 26px;font-size:25px;color:#777;outline:none}
+input::placeholder{color:#777;opacity:1}
+input:focus,select:focus{border-color:#20cf6a}
+select{color:#aaa}
+.submit-btn{width:100%;height:92px;border:0;border-radius:20px;background:#20d267;color:#fff;font-size:27px;font-weight:800;cursor:pointer}
+#message{margin-top:18px;text-align:center;font-size:17px;font-weight:600;display:none}
+#plansSection{display:none;margin-top:30px}
+.plan{border:1px solid #ddd;border-radius:15px;padding:16px;margin-bottom:12px;background:#fafafa}
+.plan button{width:100%;padding:13px;border:0;border-radius:10px;background:#20d267;color:#fff;font-size:17px;font-weight:700}
+@media(max-width:430px){
+.card{padding:36px 24px 38px}
+h1{font-size:40px;margin-bottom:52px}
+label{font-size:25px}
+input,select{height:92px;font-size:23px}
+.submit-btn{height:90px;font-size:25px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="card">
+
+<h1>PayFirst1</h1>
+
+<div class="field">
+<label for="mobile">📱 Mobile Number</label>
+<input id="mobile" type="tel" maxlength="10" inputmode="numeric" placeholder="Enter 10-digit mobile number">
+</div>
+
+<div class="field">
+<label for="operator">📶 SIM Operator</label>
+<select id="operator">
+<option value="" selected disabled>Select SIM Operator</option>
+<option value="Jio">Jio</option>
+<option value="Airtel">Airtel</option>
+<option value="Vi">Vi</option>
+<option value="BSNL">BSNL</option>
+</select>
+</div>
+
+<div class="field">
+<label for="whatsapp">💬 WhatsApp Number</label>
+<input id="whatsapp" type="tel" maxlength="10" inputmode="numeric" placeholder="Enter 10-digit WhatsApp number">
+</div>
+
+<button class="submit-btn" onclick="viewPlans()">View Recharge Plans</button>
+
+<div id="message"></div>
+
+<div id="plansSection">
+<h2>Select Recharge Plan</h2>
+<div id="planList"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+/* =========================================================
+   BACKEND URL YAHAN PASTE KAREIN
+   Example:
+   const BACKEND_URL = "https://payfirst.onrender.com";
+   ========================================================= */
+const BACKEND_URL = "YOUR_BACKEND_URL_HERE";
+const PLANS_ENDPOINT = "/api/plans";
+
+async function viewPlans(){
+  const mobile=document.getElementById("mobile").value.trim();
+  const operator=document.getElementById("operator").value;
+  const whatsapp=document.getElementById("whatsapp").value.trim();
+  const message=document.getElementById("message");
+
+  message.style.display="block";
+  message.style.color="#111";
+
+  if(!/^[0-9]{10}$/.test(mobile)){
+    message.textContent="Please enter a valid 10-digit mobile number.";
+    message.style.color="red"; return;
+  }
+  if(!operator){
+    message.textContent="Please select SIM Operator.";
+    message.style.color="red"; return;
+  }
+  if(!/^[0-9]{10}$/.test(whatsapp)){
+    message.textContent="Please enter a valid 10-digit WhatsApp number.";
+    message.style.color="red"; return;
+  }
+
+  if(BACKEND_URL==="YOUR_BACKEND_URL_HERE"){
+    message.textContent="BACKEND_URL me apna Render backend URL paste karein.";
+    message.style.color="#d97706"; return;
+  }
+
+  message.textContent="Recharge plans load ho rahe hain...";
+
+  try{
+    const url=BACKEND_URL.replace(/\/$/,"")+PLANS_ENDPOINT+
+      "?mobile="+encodeURIComponent(mobile)+
+      "&operator="+encodeURIComponent(operator);
+
+    const response=await fetch(url);
+    if(!response.ok) throw new Error("Backend error");
+
+    const data=await response.json();
+    showPlans(data.plans||[]);
+
+    if(data.plans && data.plans.length){
+      message.textContent="Recharge plans available hain:";
+      message.style.color="green";
+    }else{
+      message.textContent="Is number/operator ke liye koi plan nahi mila.";
+    }
+  }catch(error){
+    console.error(error);
+    message.textContent="Plans load nahi ho paaye. Backend/API connection check karein.";
+    message.style.color="red";
+  }
+}
+
+function showPlans(plans){
+  const section=document.getElementById("plansSection");
+  const list=document.getElementById("planList");
+  list.innerHTML="";
+
+  plans.forEach(plan=>{
+    const div=document.createElement("div");
+    div.className="plan";
+    div.innerHTML=
+      "<h3>₹"+(plan.amount??"")+"</h3>"+
+      "<p>"+(plan.validity??"")+"</p>"+
+      "<p>"+(plan.description??"")+"</p>"+
+      '<button onclick="selectPlan('+JSON.stringify(plan).replace(/"/g,"&quot;")+')">Select Plan</button>';
+    list.appendChild(div);
+  });
+
+  section.style.display=plans.length?"block":"none";
+}
+
+function selectPlan(plan){
+  const mobile=document.getElementById("mobile").value.trim();
+  const operator=document.getElementById("operator").value;
+  const whatsapp=document.getElementById("whatsapp").value.trim();
+
+  alert("Plan selected!\n\nMobile: "+mobile+
+        "\nOperator: "+operator+
+        "\nWhatsApp: "+whatsapp+
+        "\nPlan: ₹"+(plan.amount??""));
+}
+</script>
+</body>
+</html>
